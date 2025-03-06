@@ -1,13 +1,12 @@
 import os
 import exifread
 import cv2
-import glob
 import datetime as dt
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import piexif
+from shutil import copy
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -237,7 +236,7 @@ def worker_image_partitions(C,params):
             """
             for i in range(n):
                 img_path = C[sid][deploy][i][-1]
-                original_raw_imgs[i] = cv2.imread(img_path)
+                original_raw_imgs[i] = img_path
                 raw_imgs[i] = read_crop_resize(img_path,height=height,width=width)
 
             # [3] find events and partition the images on quality::::::::::::::::::::::::::::::::::::::::
@@ -259,20 +258,17 @@ def worker_image_partitions(C,params):
                                     sharp_imgs[i] = raw_imgs[i] 
                                     original_sharp_imgs[i] = original_raw_imgs[i]
 
-            # [4] apply fixes for those that can be fixed::::::::::::::::::::::::::::::::::::::::::::::::::::
-            """
-            COMMENT: MIGHT WANT TO SHIFT TO SHUTIL.COPY() SINCE IT'S FASTER
-            """
+            # [4] copying the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
             for i in original_sharp_imgs:
-                if i in ls: label = ls[i]
+                if i in ls: label = ls[i] 
                 else:       label = 0
 
                 passed_dir = out_dir+'/passed'
                 if not os.path.exists(passed_dir): os.mkdir(passed_dir)
                 if write_labels: img_name = passed_dir+'/S%s_D%s_I%s_NE_L%s.JPG'%(sid,deploy,i,label)
                 else:            img_name = passed_dir+'/S%s_D%s_I%s_NE.JPG'%(sid,deploy,i)
-                cv2.imwrite(img_name, original_sharp_imgs[i])
-                print('can not enhance img=%s,sid=%s,deploy=%s'%(i,sid,deploy))
+                copy(original_sharp_imgs[i], img_name) # --> from the shutil library
+                print(f"Copied image to {img_name}")
     return True
 
 def process_image_partitions(T,params,cpus=6):
