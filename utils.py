@@ -7,9 +7,139 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+import piexif
 
 #utils------------------------------------------------------------------------
 #import utils
+
+def get_label(path):
+    label = 0
+    if path.find('label_')>-1:
+        label = int(path.split('label_')[-1].split('/')[0])
+    elif path.endswith('_L0.JPG') or path.endswith('_L1.JPG') or path.endswith('_L2.JPG') or\
+            path.endswith('_L3.JPG') or path.endswith('_L4.JPG') or path.endswith('_L5.JPG') or path.endswith('_L6.JPG'):
+        label = int(path.split('/')[-1].split('_L')[-1].split('.JPG')[0])
+    else:
+        if os.path.exists(path):
+            try:
+                E = piexif.load(path)
+                if '0th' in E:
+                    t =''
+                    if 270 in E['0th']:
+                        t = E['0th'][270].decode('ascii')
+                    if t.isdigit(): label = int(t)
+            except Exception as e:
+                print(e,path)
+    return label
+
+# Read all images exif data to order and partition triggered events,returns: order,error,trigs
+def temporally_order_paths(S,time_bin=5):
+    O = {}
+    for sid in S:
+        O[sid] = {}
+        for deploy in sorted(S[sid]):
+            try:
+                O[sid][deploy] = {'order':[],'exif':[],'trigs':[]}
+                start = dt.datetime.strptime(deploy.split('_')[0],'%m%d%y')-dt.timedelta(seconds=1)
+                stop  = dt.datetime.strptime(deploy.split('_')[1],'%m%d%y')+dt.timedelta(hours=24)
+                #---------------------------------------------------------------------------------
+                raw = []
+                for i in range(len(S[sid][deploy])):
+                    path  = S[sid][deploy][i]
+                    label = get_label(path)
+                    exif  = read_exif_tags(path)
+                    if 'Image Make' in exif: ct = exif['Image Make']
+                    else:                    ct = 'Unknown'
+                    if 'Image DateTime' in exif: ts = dt.datetime.strptime(exif['Image DateTime'],'%Y:%m:%d %H:%M:%S')
+                    else:                        ts = dt.datetime.strptime('2020:01:01 00:00:00','%Y:%m:%d %H:%M:%S')
+                    if ts>=start and ts<=stop:
+                        raw += [[ts,label,ct,path]]
+                    else:
+                        O[sid][deploy]['exif'] += [[ts,label,ct,path]]
+                if len(raw)<1 and len(O[sid][deploy]['exif'])>1: #try to fix the year?
+                    print('exif date stamps do not match deployment dates for %s images...'%(len(O[sid][deploy]['exif'])))
+                    exif_issues,corrected = O[sid][deploy]['exif'],[]
+                    start_e = np.min([e[0] for e in exif_issues])
+                    stop_e  = np.max([e[0] for e in exif_issues])
+                    year_diff = int(np.round(np.mean([(start-start_e).total_seconds()/(60*60*24*365),
+                                                      (stop - stop_e).total_seconds()/(60*60*24*365)])))
+                    print('attempting to correct exif date stamps using offset=%s years'%year_diff)
+                    for i in range(len(exif_issues)):
+                        ts = exif_issues[i][0]
+                        nt = ts+dt.timedelta(days=365*year_diff)
+                        if nt>=start and nt<=stop: #does the corrected date fix the issues?
+                            corrected += [i]       #save its index so we can still toss some...
+                            exif_issues[i][0] = nt #patch the corrected year into the datetime stamp
+                    issues = sorted(set(range(len(exif_issues))).difference(set(corrected)))
+                    print('%s corrections were made, %s images remain with unfixable issues...'%(len(corrected),len(issues)))
+                    O[sid][deploy]['exif'] = []
+                    for i in issues:    O[sid][deploy]['exif'] += [exif_issues[i]]
+                    for c in corrected: raw += [exif_issues[c]]
+                raw = sorted(raw, key=lambda x: x[0])
+
+                #[0] find the maximal deployment timestamp point (within the hour): camera capture rate and offset
+                deploy_days = (stop-start).days
+                deploy_hours = deploy_days*24    #maximal number of temporal triggered events
+                T = [dt.timedelta(minutes=int(t)) for t in np.arange(0,time_bin+60,time_bin)]
+                H = {t:0 for t in T}
+                for r in raw:
+                    _t = dt.timedelta(minutes=r[0].time().minute,seconds=r[0].time().second)
+                    for t in range(1,len(T),1):
+                        if _t>=T[t-1] and _t<T[t]:
+                            H[T[t-1]] += 1
+                            break
+                max_ts = [dt.timedelta(0),0]
+                for h in H:
+                    if H[h]>max_ts[1]: max_ts = [h,H[h]]
+
+                #[1] filter out timestamps in the non-maximal point
+                R = []
+                for r in raw:
+                    _t = dt.timedelta(minutes=r[0].time().minute,seconds=r[0].time().second)
+                    if _t>=max_ts[0] and _t<max_ts[0]+dt.timedelta(minutes=time_bin):
+                        R += [_t]
+                if len(R)>0:
+                    mean_ts = np.mean(R)
+                    for r in raw:
+                        _t = dt.timedelta(minutes=r[0].time().minute,seconds=r[0].time().second)
+                        if abs(mean_ts-_t).total_seconds()<time_bin*60.0: O[sid][deploy]['order']   += [r]
+                        else:                                               O[sid][deploy]['trigs'] += [r]
+                n_error,n_trig,n_tot = len(O[sid][deploy]['exif']),len(O[sid][deploy]['trigs']),len(S[sid][deploy])
+                if n_error>0:
+                    print('sid=%s,deploy=%s: %s or %s/%s images had timestamps outside the deployment...'\
+                          %(sid,deploy,round(n_error/n_tot,2),n_error,n_tot))
+                if n_trig>0:
+                    print('sid=%s,deploy=%s: %s or %s/%s images were potential triggered events...'\
+                          %(sid,deploy,round(n_trig/n_tot,2),n_trig,n_tot))
+            except Exception as e:
+                print(e)
+    return O
+
+def get_sid(path):
+    ss,sid = path.split('/'),-1
+    if path.split('/')[-1].split('_')[0].isdigit():
+        sid = int(path.split('/')[-1].split('_')[0])
+    return sid
+
+def get_deploy(path):
+    return '_'.join(path.split('/')[-2].split('_')[2:5]).split(' ')[0]
+
+def fix_file_names(path):
+    ss   = path.split('/')
+    stub = ss[-2]
+    if ss[-1].find(stub)>-1: #file name has the folder name in it
+        if stub.split('_')[-1].isdigit(): #is the folder name ending with a number
+            new_path = stub+'_'+ss[-1].replace(stub,'')
+        else:                             #it is ending with an initial
+            new_path = stub+'_'+ss[-1].replace(stub + '_', '')
+    else:                    #file name doesn't have the folder name in it
+        if stub.split('_')[-1].isdigit():
+            new_path = ss[-2]+'_'+ss[-1]
+        else:
+            new_path = '_'.join(ss[-2].split('_')[:-1])+'_'+ss[-1]
+    new_path = '/'.join(ss[:-1])+'/'+new_path
+    if path!=new_path: os.rename(path,new_path)
+    return [path,new_path]
 
 result_list = []
 def collect_results(result):
