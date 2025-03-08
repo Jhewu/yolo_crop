@@ -10,6 +10,11 @@ from shutil import copy
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+"""
+ORGANIZE THE CODE UTIL, AND THEN MOVE SOME OF THE IMPORTANT 
+FUNCTIONS TO MINI SRIP
+"""
+
 def crop_seg(img,seg):
     if np.abs(seg[0]-seg[2]) > np.abs(seg[1]-seg[3]):    #horizontal
         if np.abs(img.shape[0]-seg[1]) < seg[1]: #bottom orientation
@@ -213,9 +218,7 @@ result_list = []
 def collect_results(result):
     result_list.append(result)
 
-def worker_image_partitions(C,params):
-    write_labels         = params['write_labels']
-    out_dir              = params['out_dir']
+def worker_image_partitions(C, out_dir):
     width                = 600
     height               = 200
     for sid in C:
@@ -229,6 +232,7 @@ def worker_image_partitions(C,params):
             # [2] read images and detect image events::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             raw_imgs = {}
             original_raw_imgs = {}
+
             """
             COMMENT: Here's our new approach, we will filter all images using crop
             for faster computation in raw_imgs, and will modify original_raw_imgs, 
@@ -265,13 +269,12 @@ def worker_image_partitions(C,params):
 
                 passed_dir = out_dir+'/passed'
                 if not os.path.exists(passed_dir): os.mkdir(passed_dir)
-                if write_labels: img_name = passed_dir+'/S%s_D%s_I%s_NE_L%s.JPG'%(sid,deploy,i,label)
-                else:            img_name = passed_dir+'/S%s_D%s_I%s_NE.JPG'%(sid,deploy,i)
+                img_name = f"passed/{os.path.basename(original_sharp_imgs[i])}"
                 copy(original_sharp_imgs[i], img_name) # --> from the shutil library
                 print(f"Copied image to {img_name}")
     return True
 
-def process_image_partitions(T,params,cpus=6):
+def process_image_partitions(T,out_dir,cpus=6):
     # Originally, the function used to detect events
     # and perform all of the traditional image enhancements
     # but for mini SRIP, it will just save the passed images
@@ -282,7 +285,7 @@ def process_image_partitions(T,params,cpus=6):
     for cpu in T:  # balanced sid/deployments in ||
         print('dispatching %s images to core=%s'%(T[cpu]['n'],cpu))
         p2.apply_async(worker_image_partitions,
-                       args=(T[cpu]['imgs'],params),
+                       args=(T[cpu]['imgs'],out_dir),
                        callback=collect_results)
     p2.close()
     p2.join()

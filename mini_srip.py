@@ -27,7 +27,6 @@ if __name__ == "__main__":
     parser.add_argument('--in_dir',type=str,help='input directory of images\t[None]')
     parser.add_argument('--out_dir',type=str,help='output directory prefix\t[None]')
     parser.add_argument('--sids',type=str,help='specific comma seperated sids to process\t[all]')
-    parser.add_argument('--label_sub_folders',action='store_true',help='generate subfolders for passed images\t[False]')
     parser.add_argument('--cpus',type=int,help='CPU cores to use for || processing\t[1]')
     args = parser.parse_args()
 
@@ -44,13 +43,6 @@ if __name__ == "__main__":
         cpus = args.cpus
     else: cpus = 1
 
-    """THIS IS ONLY FOR TESTING"""
-    # args.sids = [14434] #[19022] #,14434, 14523, 15244]
-    # sids = [14434]
-
-    params = {'write_labels':args.label_sub_folders, "out_dir":args.out_dir}
-    print('using params:%s'%params)
-
     # Fetch and fix file names with the pattern and obtain the sorted raw_paths
     raw_path = in_dir+'/*/*.JPG'
     ffids = [util.fix_file_names(path) for path in glob.glob(raw_path)]
@@ -65,7 +57,6 @@ if __name__ == "__main__":
 
     # Check for trailing slashes and creating the output directory
     while out_dir[-1]=='/': out_dir = out_dir[:-1]
-    out_dir = os.path.join(out_dir, "out_dir")
     if not os.path.exists(out_dir): os.mkdir(out_dir)
     print('output directory has been created at:%s'%out_dir)
 
@@ -87,9 +78,6 @@ if __name__ == "__main__":
     # Read exif and time sort with temporal trigger removal routine
     O = util.temporally_order_paths(S) # This will call get_label and look for exif data...
 
-    """
-    COMMENT: EXAMINE IF ALL OF THIS CODE IS NECESSARY
-    """
     # This code partitions image data for parallel processing by:
     # 1. Aggregating and sorting images by their count.
     # 2. Distributing the sorted data across available CPUs using round-robin.
@@ -113,12 +101,14 @@ if __name__ == "__main__":
     print('partitioned %s total images to %s processors'%(n_images,cpus))
 
     start = time.time()
-    util.process_image_partitions(T,params,cpus=cpus)
+    util.process_image_partitions(T,out_dir, cpus=cpus)
     stop  = time.time()
     print('processed %s images in %s sec using %s cpus'%(n_images,round(stop-start,2),cpus))
     print('or %s images per sec'%(n_images/(stop-start)))
 
-    # Creates 
+    """
+    FINISH IMPLEMENTING THIS PART WHICH IS NOT YET
+    """
     # if args.label_sub_folders:
     #     I = {}
     #     for img_path in glob.glob(out_dir+'/passed*/*.JPG'):

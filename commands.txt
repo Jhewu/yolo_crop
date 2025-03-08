@@ -1,8 +1,21 @@
 python3 mini_srip.py \
 --in_dir ./data \
---out_dir .
-
+--out_dir ./out_dir \
+--cpus 6
 
 python3 mini_srip.py \
 --in_dir /media/informatics/data/student/eco_class/flow_data/2018 \
---out_dir .
+--out_dir . \
+--cpus 6
+
+---------------------------------------------------------------------------------------------------------------
+
+python3 flowlabel_mapper.py \
+--in_dir /media/informatics/data/student/eco_class/flow_data/2018/ \
+--out_dir ./labeled \
+--flow_label /media/informatics/data/student/eco_class/flow_data/2018/flowlabel_clean_for_analysis_100719.csv
+
+python3 flowlabel_mapper.py \
+--in_dir data2/14434_SalmonCreek_040218_040618 \
+--out_dir ./labeled \
+--flow_label flowlabel_clean_for_analysis_100719.csv
