@@ -11,6 +11,10 @@ from shutil import copy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 """
+Utilities script for mini_srip.py
+"""
+
+"""
 ORGANIZE THE CODE UTIL, AND THEN MOVE SOME OF THE IMPORTANT 
 FUNCTIONS TO MINI SRIP
 """
@@ -263,13 +267,18 @@ def worker_image_partitions(C, out_dir):
                                     original_sharp_imgs[i] = original_raw_imgs[i]
 
             # [4] copying the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
+            # print(f"\nThis is original sharp images {original_sharp_imgs}")
             for i in original_sharp_imgs:
                 if i in ls: label = ls[i] 
                 else:       label = 0
 
+                """
+                COMMENT: WILL PROBABLY REQUIRE WRITE LABELS, FOR 2019-2020 DATASET
+                """
                 passed_dir = out_dir+'/passed'
                 if not os.path.exists(passed_dir): os.mkdir(passed_dir)
-                img_name = f"passed/{os.path.basename(original_sharp_imgs[i])}"
+                img_name = f"{passed_dir}/{os.path.basename(original_sharp_imgs[i])}"
+                print(f"\nThis is img_name {img_name}")
                 copy(original_sharp_imgs[i], img_name) # --> from the shutil library
                 print(f"Copied image to {img_name}")
     return True

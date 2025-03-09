@@ -8,6 +8,13 @@ python3 mini_srip.py \
 --out_dir . \
 --cpus 6
 
+/media/informatics/data/student/eco_class/labeled_img_no_srip/labeled_2018/label_1
+
+python3 mini_srip.py \
+--in_dir ./labeled_2018/label_3 \
+--out_dir ./out_dir \
+--cpus 7
+
 ---------------------------------------------------------------------------------------------------------------
 
 python3 flowlabel_mapper.py \

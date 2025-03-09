@@ -3,3 +3,6 @@ data/
 passed/
 out_dir/
 test/
+labeled_2018/
+data_to_annotate.zip
+data_to_annotate/
