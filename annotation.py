@@ -54,6 +54,9 @@ def onKeyPress(event):
     elif key in labels: 
         print(f"Class {key} Selected")
         state["class"] = key
+    elif key == "escape": 
+        print(f"\nPressed {key}. Terminating Program...")
+        exit()
 
 def saveAnnotation(): 
     class_id = state["class"]
@@ -84,11 +87,11 @@ if __name__== "__main__":
     labels = utils.getDir(in_dir, root)
     labels_out = utils.getDir(out_dir, root)
 
-    for i in range(2+len(labels)-len(labels)): 
+    for i in range(len(labels)): 
         sids = utils.getSidDir(labels[i])
 
         print(f"\n\n---THIS IS LABEL {os.path.basename(labels[i])}---\n\n")
-        for j in range(2+len(sids)-len(sids)):
+        for j in range(len(sids)):
             # Create the output directory
             out_path = os.path.join(labels_out[i], os.path.basename(sids[j]))
             utils.createDir(out_path)
@@ -98,7 +101,7 @@ if __name__== "__main__":
             image = cv.imread(images[0])
             height, width, _ = image.shape
             
-            fig, ax = plt.subplots(figsize=(8, 6))
+            fig, ax = plt.subplots(figsize=(12, 10))
             plt.imshow(image)
 
             coordinates = []
@@ -109,3 +112,4 @@ if __name__== "__main__":
 
             fig.canvas.mpl_disconnect(cid1)
             fig.canvas.mpl_disconnect(cid2)
+    print(f"\nAnnotation Completed. Please check your working directory for {out_dir}")
