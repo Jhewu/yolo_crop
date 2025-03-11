@@ -5,7 +5,7 @@ import argparse
 import glob
 import os
 import time
-import util
+import preprocessing_util.mini_srip_util as mini_srip_util
 
 def srip_filter(): 
     return
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # Fetch and fix file names with the pattern and obtain the sorted raw_paths
     raw_path = in_dir+'/*/*.JPG'
-    ffids = [util.fix_file_names(path) for path in glob.glob(raw_path)]
+    ffids = [mini_srip_util.fix_file_names(path) for path in glob.glob(raw_path)]
     raw_paths = sorted(glob.glob(raw_path))
 
     # Condition to check folder structure of in_dir
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # Create dictionary that stores images by site ID
     S = {}
     for path in raw_paths:
-        sid,deploy = util.get_sid(path), util.get_deploy(path)
+        sid,deploy = mini_srip_util.get_sid(path), mini_srip_util.get_deploy(path)
         if sid in S:
             if deploy in S[sid]: S[sid][deploy] += [path]
             else:                S[sid][deploy]  = [path]
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     print('%s total deployments were found among the image paths'%(sum([len(S[sid]) for sid in S])))
 
     # Read exif and time sort with temporal trigger removal routine
-    O = util.temporally_order_paths(S) # This will call get_label and look for exif data...
+    O = mini_srip_util.temporally_order_paths(S) # This will call get_label and look for exif data...
 
     # This code partitions image data for parallel processing by:
     # 1. Aggregating and sorting images by their count.
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         T[cpu] = {'n':0,'imgs':{}}
         for d in range(len(P[cpu])):
             if P[cpu][d][0]>0: # sids can be duplicates, deploys are unique here...
-                sid,deploy = util.get_sid(P[cpu][d][1][0][-1]), util.get_deploy(P[cpu][d][1][0][-1])
+                sid,deploy = mini_srip_util.get_sid(P[cpu][d][1][0][-1]), mini_srip_util.get_deploy(P[cpu][d][1][0][-1])
                 if sid not in T[cpu]['imgs']: T[cpu]['imgs'][sid] = {}
                 T[cpu]['imgs'][sid][deploy] = P[cpu][d][1]
                 T[cpu]['n'] += P[cpu][d][0]
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     print('partitioned %s total images to %s processors'%(n_images,cpus))
 
     start = time.time()
-    util.process_image_partitions(T,out_dir, cpus=cpus)
+    mini_srip_util.process_image_partitions(T,out_dir, cpus=cpus)
     stop  = time.time()
     print('processed %s images in %s sec using %s cpus'%(n_images,round(stop-start,2),cpus))
     print('or %s images per sec'%(n_images/(stop-start)))

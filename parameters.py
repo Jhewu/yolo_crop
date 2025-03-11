@@ -1,34 +1,28 @@
 """
-All hyperparameters configured within
+COMMENT: All hyperparameters configured within
 this file. The other hyperparameters
 are in "default" mode, check 
 https://docs.ultralytics.com/usage/cfg/#tasks
-for more information
+for more information...
 """
 
-"""General"""
-MODE = "test"            # train, val, test, predict 
+"""GENERAL"""
+# OPTIONS: train, val, predict
+MODE = "train"              
 SEED = 42
-MODEL = "yolo11n-seg"
+MODEL = "yolo12n"
 
-DATASET = "t1c_dataset"
-                            # t1c_dataset for single modality
-                            # all_modality_dataset for all modality
-                            # stacked_dataset for three modality stacked into one image
-
-"""Training"""
+DATASET = "2018_YOLO"
+                           
+"""TRAINING"""
 EPOCH = 1
-BATCH = 16
 
 LOAD_AND_TRAIN = False
-BEST_MODEL_DIR_TRAIN = "yolo11n-seg_all_modality_dataset/weights/best.pt"
+BEST_MODEL_DIR_TRAIN = ""
 
-"""Validation"""
-BEST_MODEL_DIR_VAL = "yolo11n-seg_all_modality_dataset/weights/best.pt"
+"""VALIDATION"""
+BEST_MODEL_DIR_VAL = ""
 
-"""Testing"""
-BEST_MODEL_DIR_TEST = "yolo11n-seg_all_modality_dataset/weights/best.pt"
-
-"""Predict"""
-BEST_MODEL_DIR_PREDICT = "yolo11n-seg_all_modality_dataset/weights/best.pt"
-IMAGE_TO_TEST = "BraTS-PED-00003-00091-t1c.png"
+"""PREDICT"""
+BEST_MODEL_DIR_PREDICT = ""
+IMAGE_TO_PREDICT = ""

@@ -9,3 +9,7 @@ data_to_annotate/
 annotated_data/
 yolo_dataset/
 yolo_dataset.zip
+datasets/
+
+yolo11n.pt
+yolo12n.pt
