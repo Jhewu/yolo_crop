@@ -1,10 +1,10 @@
 import os
 
 """Functions below, are for obtaining data directories"""
-def getDir(root): 
+def getDir(in_dir, root): 
     dirs = []
     for i in range(1,7):
-        dirs.append(os.path.join(os.getcwd(), f"{root}{i}"))
+        dirs.append(os.path.join(os.getcwd(), in_dir, f"{root}{i}"))
     return dirs
 
 def getSidDir(path): 
@@ -40,3 +40,9 @@ def getCenter(width, height):
     return width // 2, height // 2
 
 """Functions above, are for calculating rectangles"""
+
+"""Miscellaneous functions"""
+
+def createDir(folder_name):
+   if not os.path.exists(folder_name):
+       os.makedirs(folder_name)   

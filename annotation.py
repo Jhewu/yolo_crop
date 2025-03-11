@@ -59,23 +59,41 @@ def saveAnnotation():
     class_id = state["class"]
     coordinates = state["coordinates"]
     format = f"{class_id} {coordinates}"
+    for image in images:
+        image = os.path.basename(image).split(".JPG")[0]
+        image_path = os.path.join(out_path, image)
+
+        # Write the saved annotation to a text file
+        f = open(f"{image_path}.txt", "w")
+        f.write(format)
+        f.close()
+
     plt.close()
     print(format)
+    print(f"Saved to {image_path}.txt\n")
 
 state = {
     "class:": None, 
     "coordinates": []}
 
 if __name__== "__main__": 
+    in_dir = "data_to_annotate"
+    out_dir = "annotated_data"
+
     root = "label_"
-    labels = utils.getDir(root)
+    labels = utils.getDir(in_dir, root)
+    labels_out = utils.getDir(out_dir, root)
 
-    for label in labels: 
-        sids = utils.getSidDir(label)
-        print(f"\n\n---THIS IS LABEL {os.path.basename(label)}---\n\n")
+    for i in range(2+len(labels)-len(labels)): 
+        sids = utils.getSidDir(labels[i])
 
-        for sid in sids: 
-            images = utils.getImages(sid)
+        print(f"\n\n---THIS IS LABEL {os.path.basename(labels[i])}---\n\n")
+        for j in range(2+len(sids)-len(sids)):
+            # Create the output directory
+            out_path = os.path.join(labels_out[i], os.path.basename(sids[j]))
+            utils.createDir(out_path)
+
+            images = utils.getImages(sids[j])
 
             image = cv.imread(images[0])
             height, width, _ = image.shape
