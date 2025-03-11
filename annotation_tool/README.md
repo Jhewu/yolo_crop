@@ -1,0 +1,4 @@
+# MatPlot Annotate: Lightweight YOLO Annotator for High-Resolution Images
+
+## Why Reinvent the Wheel? 
+CVAT (the most popular) framework, only supports images up to certain resolution. If you exceed it, your images will be "squeezed." LabelMe is also a great alternative, but it's not updated to the latest packages. At least, I encountered errors related to the GUI, rendering it useless. This repository, is not meant to replace these softwares. It's meant to be a Lightweight YOLO annotator, which only use two packages, MatPlotLib (for the GUI and annotation interface), and OpenCV (to load images). It's also simple enough for anyone to understand the code, and use

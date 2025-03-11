@@ -3,7 +3,7 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
-import utils
+import annotation_tool.matplot_annotate_utils as matplot_annotate_utils
 
 def onClick(event): 
     x, y = int(event.xdata), int(event.ydata)
@@ -26,9 +26,9 @@ def onClick(event):
 
         if len(objects) == 2: 
             # Draw the rectangle and append it to objects (to remove later)
-            p3, p4 = utils.getOppDiagonals(coordinates[0], coordinates[1])
+            p3, p4 = matplot_annotate_utils.getOppDiagonals(coordinates[0], coordinates[1])
             points = [coordinates[0], coordinates[1], p3, p4]
-            bottom_left, bottom_right, top_left, top_right = utils.getCorners(points)
+            bottom_left, bottom_right, top_left, top_right = matplot_annotate_utils.getCorners(points)
 
             w = bottom_right[0] - bottom_left[0]
             h = top_right[1] - bottom_right[1]
@@ -41,7 +41,7 @@ def onClick(event):
             objects.append(rect)
 
             # Update the state, and normalize the coordinates
-            center_x, center_y = utils.getCenter(w, h)
+            center_x, center_y = matplot_annotate_utils.getCenter(w, h)
             state["coordinates"] = f"{center_x/width} {center_y/height} {w/width} {h/height}"
 
 def onKeyPress(event): 
@@ -84,19 +84,19 @@ if __name__== "__main__":
     out_dir = "annotated_data"
 
     root = "label_"
-    labels = utils.getDir(in_dir, root)
-    labels_out = utils.getDir(out_dir, root)
+    labels = matplot_annotate_utils.getDir(in_dir, root)
+    labels_out = matplot_annotate_utils.getDir(out_dir, root)
 
     for i in range(len(labels)): 
-        sids = utils.getSidDir(labels[i])
+        sids = matplot_annotate_utils.getSidDir(labels[i])
 
         print(f"\n\n---THIS IS LABEL {os.path.basename(labels[i])}---\n\n")
         for j in range(len(sids)):
             # Create the output directory
             out_path = os.path.join(labels_out[i], os.path.basename(sids[j]))
-            utils.createDir(out_path)
+            matplot_annotate_utils.createDir(out_path)
 
-            images = utils.getImages(sids[j])
+            images = matplot_annotate_utils.getImages(sids[j])
 
             image = cv.imread(images[0])
             height, width, _ = image.shape
