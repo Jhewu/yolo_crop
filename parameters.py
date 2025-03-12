@@ -15,7 +15,7 @@ MODEL = "yolo12n"
 DATASET = "2018_YOLO"
                            
 """TRAINING"""
-EPOCH = 1
+EPOCH = 100
 
 LOAD_AND_TRAIN = False
 BEST_MODEL_DIR_TRAIN = ""

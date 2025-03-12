@@ -11,7 +11,7 @@ INPUT_DIR = os.path.join(ROOT, "images/train_small")
 OUTPUT_DIR = os.path.join(ROOT, "images/train_small_down")
 # OUTPUT_DIR = os.path.join(ROOT, "images/val_small_down")
 
-SAMPLE_FROM_SITE = 525
+SAMPLE_FROM_SITE = 100
 
 def CreateDir(folder_name):
    if not os.path.exists(folder_name):
