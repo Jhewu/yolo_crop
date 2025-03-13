@@ -1,0 +1,13 @@
+# COMMENT: For the data format, please refer to: 
+# https://docs.ultralytics.com/datasets/segment/coco/
+
+# Dataset root directory
+path: /home/student/Desktop/YOLO/datasets/2018_YOLO
+
+# Train/Val images ('relative to path')
+train: images/train_small_one
+val: images/val_small_one
+
+# Classes
+nc: 1
+names: ["river"]

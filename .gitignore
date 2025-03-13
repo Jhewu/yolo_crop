@@ -7,10 +7,13 @@ labeled_2018/
 data_to_annotate.zip
 data_to_annotate/
 annotated_data/
-yolo_dataset/
-yolo_dataset.zip
-datasets/
 
-yolo11n.pt
-yolo12n.pt
+
+2018_YOLO/
+YOLO_CROPPED/
+
+runs/
+
+yolo11*.pt
+yolo12*.pt
 train_yolo*/

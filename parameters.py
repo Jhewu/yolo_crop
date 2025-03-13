@@ -8,20 +8,21 @@ for more information...
 
 """GENERAL"""
 # OPTIONS: train, val, predict
-MODE = "train"              
-SEED = 42
+MODE = "train"           
 MODEL = "yolo12n"
-
+SEED = 42
 DATASET = "2018_YOLO"
                            
 """TRAINING"""
-EPOCH = 100
+EPOCH = 5
+MIXED_PRECISION = True
+IMG_SIZE = 320
 
 LOAD_AND_TRAIN = False
 BEST_MODEL_DIR_TRAIN = ""
 
 """VALIDATION"""
-BEST_MODEL_DIR_VAL = ""
+BEST_MODEL_DIR_VAL = "/home/student/Desktop/YOLO/train_yolo12n_2025_03_12_18_09_25/yolo12n_2018_YOLO/weights/best.pt"
 
 """PREDICT"""
 BEST_MODEL_DIR_PREDICT = ""

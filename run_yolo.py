@@ -1,8 +1,7 @@
 from ultralytics import YOLO
-import torch 
 import os
-import csv
 import time
+from pprint import pprint
 
 # Change parameters here
 from parameters import *
@@ -28,13 +27,14 @@ def RunYOLO(mode):
             model = YOLO(f"{MODEL}.pt")
 
         # Train the model
-        results = model.train(data=f"./datasets/{DATASET}.yaml", 
+        results = model.train(data=f"datasets/{DATASET}.yaml", 
                               epochs=EPOCH, 
+                              imgsz=IMG_SIZE,
+                              amp=MIXED_PRECISION,
                               seed=SEED, 
                               batch=-1,
                               plots=True,
-                              project=f"{MODE}_{MODEL}_{GetCurrentTime()}",
-                              name=f"{MODEL}_{DATASET}")
+                              name=f"{MODE}_{MODEL}_{GetCurrentTime()}")
         print(f"\nFinished training, please check your directory for folder named 'train-....")
         
     elif mode == "val":
@@ -42,8 +42,8 @@ def RunYOLO(mode):
         print(f"Fetching weights from...{BEST_MODEL_DIR_VAL}\n")
         model = YOLO(BEST_MODEL_DIR_VAL)
         metrics = model.val(plots=True, 
-                            name=f"{MODE}_{MODEL}_{DATASET}")
-        print(f"\nmAP50-95: {metrics.seg.map}\n")
+                            task="detect",
+                            name=f"{MODE}_{MODEL}_{GetCurrentTime()}")
         print(f"\nFinished validation, please check your directory for folder named 'val-....")
     
     elif mode == "predict":
