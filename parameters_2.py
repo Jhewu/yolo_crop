@@ -9,7 +9,7 @@ for more information...
 """GENERAL"""
 # OPTIONS: train, val, predict
 MODE = "train"           
-MODEL = "yolo12x"
+MODEL = "yolo12n"
 SEED = 42
 DATASET = "2018_YOLO"
                            
