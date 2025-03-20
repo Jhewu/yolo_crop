@@ -46,3 +46,6 @@ def getCenter(width, height):
 def createDir(folder_name):
    if not os.path.exists(folder_name):
        os.makedirs(folder_name)   
+
+if __name__  == "__main__": 
+    print("You're not supposed to be running this!")

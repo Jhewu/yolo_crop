@@ -3,7 +3,7 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
-import annotation_tool.matplot_annotate_utils as matplot_annotate_utils
+import matplot_annotate_utils
 
 def onClick(event): 
     x, y = int(event.xdata), int(event.ydata)
@@ -80,8 +80,8 @@ state = {
     "coordinates": []}
 
 if __name__== "__main__": 
-    in_dir = "data_to_annotate"
-    out_dir = "annotated_data"
+    in_dir = "val_annotate"
+    out_dir = "val_annotated"
 
     root = "label_"
     labels = matplot_annotate_utils.getDir(in_dir, root)
@@ -108,7 +108,8 @@ if __name__== "__main__":
             objects = []
             cid1 = fig.canvas.mpl_connect("button_press_event", onClick)
             cid2 = fig.canvas.mpl_connect("key_press_event", onKeyPress)
-            plt.show()
+            if plt.isinteractive(): 
+                plt.show()
 
             fig.canvas.mpl_disconnect(cid1)
             fig.canvas.mpl_disconnect(cid2)
