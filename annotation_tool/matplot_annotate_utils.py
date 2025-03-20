@@ -36,10 +36,22 @@ def getCorners(points):
     top_left, top_right = sorted(top_p, key=lambda p: p[0])
     return bottom_left, bottom_right, top_left, top_right
 
-def getCenter(width, height): 
-    return width // 2, height // 2
+def getCenter(bottom_left, w, h):
+    # Calculate actual center coordinates
+    center_x = bottom_left[0] + (w/2)
+    center_y = bottom_left[1] + (h/2)
+    return center_x, center_y
 
 """Functions above, are for calculating rectangles"""
+
+"""Functions below, are for visualization"""
+
+# def convertYOLOToCoordinates(image_path): 
+
+
+
+
+
 
 """Miscellaneous functions"""
 

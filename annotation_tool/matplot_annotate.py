@@ -3,7 +3,7 @@ import os
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
-import matplot_annotate_utils
+import annotation_tool.matplot_annotate_utils as matplot_annotate_utils
 
 def onClick(event): 
     x, y = int(event.xdata), int(event.ydata)
@@ -28,7 +28,9 @@ def onClick(event):
             # Draw the rectangle and append it to objects (to remove later)
             p3, p4 = matplot_annotate_utils.getOppDiagonals(coordinates[0], coordinates[1])
             points = [coordinates[0], coordinates[1], p3, p4]
-            bottom_left, bottom_right, top_left, top_right = matplot_annotate_utils.getCorners(points)
+            
+            # Sorts the points into the respective corner points 
+            bottom_left, bottom_right, top_left, top_right = matplot_annotate_utils.getCorners(points) 
 
             w = bottom_right[0] - bottom_left[0]
             h = top_right[1] - bottom_right[1]
@@ -41,7 +43,8 @@ def onClick(event):
             objects.append(rect)
 
             # Update the state, and normalize the coordinates
-            center_x, center_y = matplot_annotate_utils.getCenter(w, h)
+            center_x, center_y = matplot_annotate_utils.getCenter(bottom_left, w, h)
+            print(center_x, center_y)
             state["coordinates"] = f"{center_x/width} {center_y/height} {w/width} {h/height}"
 
 def onKeyPress(event): 
@@ -80,8 +83,8 @@ state = {
     "coordinates": []}
 
 if __name__== "__main__": 
-    in_dir = "val_annotate"
-    out_dir = "val_annotated"
+    in_dir = "train_annotate"
+    out_dir = "train_annotated"
 
     root = "label_"
     labels = matplot_annotate_utils.getDir(in_dir, root)
@@ -101,15 +104,15 @@ if __name__== "__main__":
             image = cv.imread(images[0])
             height, width, _ = image.shape
             
-            fig, ax = plt.subplots(figsize=(12, 10))
+            # fig, ax = plt.subplots(figsize=(12, 10))
+            fig, ax = plt.subplots(figsize=(10, 8))
             plt.imshow(image)
 
             coordinates = []
             objects = []
             cid1 = fig.canvas.mpl_connect("button_press_event", onClick)
             cid2 = fig.canvas.mpl_connect("key_press_event", onKeyPress)
-            if plt.isinteractive(): 
-                plt.show()
+            plt.show()
 
             fig.canvas.mpl_disconnect(cid1)
             fig.canvas.mpl_disconnect(cid2)

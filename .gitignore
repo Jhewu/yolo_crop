@@ -9,6 +9,7 @@ data_to_annotate/
 annotated_data/
 
 train_annotate/ 
+train_annotated/
 val_annotate/ 
 flowlabel_clean_for_analysis_100719.csv
 
