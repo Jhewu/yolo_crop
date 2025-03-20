@@ -8,6 +8,9 @@ data_to_annotate.zip
 data_to_annotate/
 annotated_data/
 
+train_annotate/ 
+val_annotate/ 
+flowlabel_clean_for_analysis_100719.csv
 
 2018_YOLO/
 YOLO_CROPPED/
