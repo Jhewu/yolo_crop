@@ -9,6 +9,7 @@ def replaceLabelWithOne(path):
     f = open(path, "r")
     read = f.read().split(" ")
     read[0] = "0"               # --> first element is the label
+    # read[0] = str(int(read[0]) - 1)
     f.close()
     return " ".join(read)
 
@@ -19,13 +20,13 @@ def writeFile(out_path, string):
 
 if __name__ == "__main__": 
     root = os.path.join("datasets", "2018_YOLO", "labels")
-    train, val = os.path.join(root, "train_small"), os.path.join(root, "val_small")
+    train, val = os.path.join(root, "train"), os.path.join(root, "val")
 
     train_list = os.listdir(train)
     val_list = os.listdir(val)
 
     # create output directories
-    train_out, val_out = os.path.join(root, "train_small_one"), os.path.join(root, "val_small_one")
+    train_out, val_out = os.path.join(root, "train_fixed"), os.path.join(root, "val_fixed")
     createDir(train_out), createDir(val_out)
 
     with ThreadPoolExecutor(max_workers=6) as executor:

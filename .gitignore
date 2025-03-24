@@ -16,6 +16,8 @@ flowlabel_clean_for_analysis_100719.csv
 2018_YOLO/
 YOLO_CROPPED/
 
+old_data/
+
 runs/
 
 yolo11*.pt

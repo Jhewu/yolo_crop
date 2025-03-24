@@ -75,11 +75,11 @@ if __name__  == "__main__":
     It also creates a train/val script. 
     """
     # Input directories
-    image_dataset = "data_to_annotate"
-    txt_dataset = "annotated_data"
+    image_dataset = "train_annotate"
+    txt_dataset = "train_annotated"
 
     # Output directories
-    out_dir = os.path.join(os.getcwd(), "yolo_dataset")
+    out_dir = os.path.join(os.getcwd(), "train_yolo_dataset")
 
     # Create the output directories
     splits = getTrainVal(out_dir)
