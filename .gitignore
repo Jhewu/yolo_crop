@@ -20,6 +20,8 @@ old_data/
 
 runs/
 
+out_predict/
+
 yolo11*.pt
 yolo12*.pt
 train_yolo*/

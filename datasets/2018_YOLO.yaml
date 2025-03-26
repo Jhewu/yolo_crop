@@ -2,15 +2,18 @@
 # https://docs.ultralytics.com/datasets/segment/coco/
 
 # Dataset root directory
-path: /home/jhewu/main/yolo_crop/datasets/2018_YOLO
+path: /home/student/Desktop/YOLO/datasets/2018_YOLO
 
 # Train/Val images ('relative to path')
 train: images/train
 val: images/val
 
 # Classes
-nc: 1
-names: ["river"]
+nc: 2
+names: ["low", "high"]
+
+# nc: 1
+# names: ["river"]
 
 # nc: 6
 # names: ["dry", "standing water", "minimal flow", "well-connected", "bankfull", "bankfull discharge"]

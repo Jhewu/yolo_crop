@@ -32,7 +32,7 @@ def RunYOLO(mode):
                               imgsz=IMG_SIZE,
                               amp=MIXED_PRECISION,
                               seed=SEED, 
-                              batch=32,
+                              batch=BATCH,
                               plots=True,
                               name=f"{MODE}_{MODEL}_{GetCurrentTime()}")
         print(f"\nFinished training, please check your directory for folder named 'train-....")

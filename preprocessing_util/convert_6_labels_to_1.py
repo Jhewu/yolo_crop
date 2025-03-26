@@ -8,8 +8,14 @@ def createDir(folder_name):
 def replaceLabelWithOne(path): 
     f = open(path, "r")
     read = f.read().split(" ")
-    read[0] = "0"               # --> first element is the label
+    # read[0] = "0"               # --> first element is the label
     # read[0] = str(int(read[0]) - 1)
+
+    if int(read[0]) <= 2: 
+        read[0] = "0"
+    else: 
+        read[0] = "1"
+
     f.close()
     return " ".join(read)
 
