@@ -17,6 +17,7 @@ flowlabel_clean_for_analysis_100719.csv
 YOLO_CROPPED/
 
 old_data/
+out_multi/
 
 runs/
 

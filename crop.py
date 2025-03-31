@@ -1,3 +1,7 @@
+"""
+This code is for YOLO prediction to crop
+"""
+
 from ultralytics import YOLO
 import os
 import cv2 as cv
@@ -16,14 +20,10 @@ def cropImage(image, coords):
     bottom_right_x = int(center_x + width // 2)
     bottom_right_y = int(center_y + height // 2)
 
-    print(top_left_x)
-
     # Perform cropping
     cropped_image = image[top_left_y:bottom_right_y, top_left_x:bottom_right_x]
 
     return cropped_image
-
-
 
 def createDir(folder_name):
    if not os.path.exists(folder_name):
@@ -53,8 +53,6 @@ if __name__ == "__main__":
         cropped_image = cropImage(image, coords)
 
         cv.imwrite(os.path.join(out_path, f"result_{index}_cropped.jpg"), cropped_image)
-
-
 
         # for box in result.boxes: 
         #     print()

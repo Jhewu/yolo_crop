@@ -29,6 +29,7 @@ def RunYOLO(mode):
         # Train the model
         results = model.train(data=f"datasets/{DATASET}.yaml", 
                               epochs=EPOCH, 
+                              patience=PATIENCE,
                               imgsz=IMG_SIZE,
                               amp=MIXED_PRECISION,
                               seed=SEED, 
