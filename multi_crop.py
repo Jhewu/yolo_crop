@@ -28,10 +28,8 @@ def cropImageWithCenter(image, coords):
 
     return cropped_image
 
-def cropImageWithLeftCorner(image, coords, sw, sh): 
-    x, y = coords
+def cropImageWithLeftCorner(image, x, y, sw, sh): 
     return image[y:y+sh, x:x+sw]
-    # return image[x:x+sw, y:y+sh]
 
 def createDir(folder_name):
    if not os.path.exists(folder_name):
@@ -58,15 +56,17 @@ if __name__ == "__main__":
     results = model(predict_list)
     
     # Save the prediction
-    for index, result in enumerate(results[:1]): 
+    for index_p, result in enumerate(results[:]): 
         boxes = result.boxes
         image = result.orig_img
         coords = boxes.xywh[0]
 
         cropped_image = cropImageWithCenter(image, coords)
 
+        print(cropped_image.shape)
+
         # Calculate how many smaller rectangle fit within the bigger rectangle
-        lh, lw,  _ = cropped_image.shape
+        lh, lw, _ = cropped_image.shape
         sh, sw = IMG_SIZE[0], IMG_SIZE[1]
         num_cols, num_rows = calcNumRect(lw, lh, sw, sh)
 
@@ -77,17 +77,16 @@ if __name__ == "__main__":
                 y = r * sh
                 x = c * sw
                 left_coords.append((x, y))
-        
-        fig, axs = plt.subplots(1, 2)
-        axs[0].imshow(cropped_image)
 
-        for index, coord in enumerate(left_coords[:]): 
-            smaller_crop = cropImageWithLeftCorner(cropped_image, coord, sw, sh)
+        # Calculate Offset to center all multi-crops
+        heigh_pad = int( (lh - (num_rows*sh)) // 2 ) 
+        width_pad = int( (lw - (num_cols*sw)) // 2 ) 
+
+        print(heigh_pad, width_pad)
+
+        for index_c, coord in enumerate(left_coords[:]): 
+            smaller_crop = cropImageWithLeftCorner(cropped_image, coord[0]+width_pad, coord[1]+heigh_pad, sw, sh)
             print(smaller_crop.shape)
-            # plt.scatter(coord[0], coord[1], color='red', s=20)
-            # axs[1].imshow(smaller_crop)
-            cv.imwrite(os.path.join(out_path, f"result_{index}_cropped.jpg"), smaller_crop)
-
-        plt.show()
+            cv.imwrite(os.path.join(out_path, f"result_{index_p}_cropped_{index_c}.jpg"), smaller_crop)
 
     print(f"\nFinished prediction, please check your directory for a file named 'results.jpg'")
