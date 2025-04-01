@@ -17,11 +17,11 @@ flowlabel_clean_for_analysis_100719.csv
 YOLO_CROPPED/
 
 old_data/
-out_multi/
+
+out_multi_crop/
+img_to_crop*/ 
 
 runs/
-
-out_predict/
 
 yolo11*.pt
 yolo12*.pt

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from parameters import *
 
 # Global Parameters Here
-IMG_SIZE = (100, 300)
+IMG_SIZE = (200, 600)
 
 def cropImageWithCenter(image, coords): 
     center_x = coords[0] ; center_y = coords[1]
@@ -42,9 +42,9 @@ def calcNumRect(lw, lh, sw, sh):
 
 if __name__ == "__main__": 
     # Declare the image path, image list and output path
-    predict_path = os.path.join(os.getcwd(), "test")
+    predict_path = os.path.join(os.getcwd(), "img_to_crop_big")
     predict_list = os.listdir(predict_path)
-    out_path = os.path.join(os.getcwd(), "out_multi") ; createDir(out_path) 
+    out_path = os.path.join(os.getcwd(), "out_multi_crop") ; createDir(out_path) 
 
     # Map the full directory to each image
     predict_list = list(map(lambda file: os.path.join(predict_path, file), predict_list))
@@ -54,16 +54,24 @@ if __name__ == "__main__":
     model = YOLO(BEST_MODEL_DIR_PREDICT)
 
     results = model(predict_list)
+    # results = model(os.path.join(predict_path, "17534_BrideBrook_080818_090518 _17534_BrideBrook_080818_090518 (200).JPG"))
     
     # Save the prediction
     for index_p, result in enumerate(results[:]): 
         boxes = result.boxes
         image = result.orig_img
-        coords = boxes.xywh[0]
+
+        if len(boxes) > 0: 
+            conf = boxes[0].conf
+            coords = boxes.xywh[0]
+        else: 
+            continue
+            
+        print(f"\nThis is the confidence {conf}")
 
         cropped_image = cropImageWithCenter(image, coords)
 
-        print(cropped_image.shape)
+        # print(cropped_image.shape)
 
         # Calculate how many smaller rectangle fit within the bigger rectangle
         lh, lw, _ = cropped_image.shape
@@ -82,11 +90,11 @@ if __name__ == "__main__":
         heigh_pad = int( (lh - (num_rows*sh)) // 2 ) 
         width_pad = int( (lw - (num_cols*sw)) // 2 ) 
 
-        print(heigh_pad, width_pad)
+        # print(heigh_pad, width_pad)
 
         for index_c, coord in enumerate(left_coords[:]): 
             smaller_crop = cropImageWithLeftCorner(cropped_image, coord[0]+width_pad, coord[1]+heigh_pad, sw, sh)
-            print(smaller_crop.shape)
+            # print(smaller_crop.shape)
             cv.imwrite(os.path.join(out_path, f"result_{index_p}_cropped_{index_c}.jpg"), smaller_crop)
 
     print(f"\nFinished prediction, please check your directory for a file named 'results.jpg'")
