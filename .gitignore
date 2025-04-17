@@ -26,3 +26,9 @@ runs/
 yolo11*.pt
 yolo12*.pt
 train_yolo*/
+
+srip/model
+srip/old
+srip/out_dir
+srip/__pycache__
+srip/updated_2018

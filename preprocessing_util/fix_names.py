@@ -14,14 +14,18 @@ def nameFile(file_name):
     return " ".join([new_file_name[0], new_file_name[-1]])
     
 if __name__ == "__main__": 
-    in_dir = "images/train_small_one"
-    out_dir = "train"
+    in_dir = "../srip"
+    out_dir = "../srip/2018"
     createDir(out_dir)
 
-    images = os.listdir(in_dir)
+    print(os.getcwd())
+    print(os.listdir(in_dir))
+    print(os.path.exists(in_dir))
 
-    for old_name in images: 
-        new_name = nameFile(old_name)
-        old_name_path = os.path.join(in_dir, old_name)
-        new_name_path = os.path.join(out_dir, new_name)
-        copy2(old_name_path, new_name_path)
+    # images = os.listdir(in_dir)
+
+    # for old_name in images: 
+    #     new_name = nameFile(old_name)
+    #     old_name_path = os.path.join(in_dir, old_name)
+    #     new_name_path = os.path.join(out_dir, new_name)
+    #     copy2(old_name_path, new_name_path)

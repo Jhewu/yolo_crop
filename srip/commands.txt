@@ -1,0 +1,17 @@
+python3 stream_river_image_processor.py \
+--in_dir ./updated_2018 \
+--out_dir ./out_dir \
+--res 300,100 \
+--enh_hrs 0 \
+--agg_hrs 0 \
+--winsize 0 \
+--cpus 16
+
+python3 stream_river_image_processor.py \
+--in_dir ./updated_2018 \
+--out_dir ./out_dir \
+--cpus 12
+
+python3 mini_srip.py \
+--in_dir ./updated_2018 \
+--out_dir ./out_dir 
