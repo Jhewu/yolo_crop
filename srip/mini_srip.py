@@ -680,7 +680,6 @@ if __name__ == "__main__":
 
     print(f"Input Directory: {in_dir}")
     print(f"Output Directory: {out_dir}")
-    print(f"SIDs to Process: {sids}")
     print(f"Image Width: {width}")
     print(f"Image Height: {height}")
     print(f"Model Directory: {model_dir}")
@@ -746,12 +745,12 @@ if __name__ == "__main__":
     # 2. Distributing the sorted data across available CPUs using round-robin.
     # 3. Organizing partitions by CPU, grouping by 'sid' and 'deploy', and tracking image counts.
     # Finally, it computes the total number of images and outputs the partitioning summary.
-    H,P,T = [],{i:[] for i in range(cpus)},{}
+    H,P,T = [],{i:[] for i in range(1)},{}
     for sid in O:
         for deploy in O[sid]:
             H += [(len(O[sid][deploy]['order']),O[sid][deploy]['order'])]
     H = sorted(H,key=lambda x: x[0])[::-1]
-    for i in range(len(H)): P[i%cpus] += [H[i]]
+    for i in range(len(H)): P[i%1] += [H[i]]
     for cpu in P:
         T[cpu] = {'n':0,'imgs':{}}
         for d in range(len(P[cpu])):
@@ -761,11 +760,11 @@ if __name__ == "__main__":
                 T[cpu]['imgs'][sid][deploy] = P[cpu][d][1]
                 T[cpu]['n'] += P[cpu][d][0]
     n_images = sum([T[cpu]['n'] for cpu in T])
-    print('partitioned %s total images to %s processors'%(n_images,cpus))
+    print('partitioned %s total images to %s processors'%(n_images,1))
 
     start = time.time()
     process_image_partitions(T,out_dir, width, height, model_dir, window_size, conf)
 
     stop  = time.time()
-    print('processed %s images in %s sec using %s cpus'%(n_images,round(stop-start,2),cpus))
+    print('processed %s images in %s sec using %s cpus'%(n_images,round(stop-start,2),1))
     print('or %s images per sec'%(n_images/(stop-start)))

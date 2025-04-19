@@ -11,8 +11,6 @@ import multiprocessing as mp
 #utils------------------------------------------------------------------------
 #import utils
 
-from ultralytics import YOLO
-
 result_list = []
 def collect_results(result):
     result_list.append(result)
@@ -995,11 +993,6 @@ def plot_confusion_heatmap(confusion_matrix,title,offset=1,out_path=None,fontsiz
             print('error with matplotlib and Agg, failed plotting heatmap')
     return True
 
-MODEL = "model/best.pt"
-
-"""
-JUN: MODIFIED HERE
-"""
 def worker_image_partitions(C,params):
     width,height         = params['width'],params['height']
     enh_hrs,agg_hrs      = params['enh_hrs'],params['agg_hrs']
@@ -1008,26 +1001,17 @@ def worker_image_partitions(C,params):
     pad,d_min,pixel_dist = params['pad'],params['d_min'],params['pixel_dist']
     write_labels         = params['write_labels']
     out_dir              = params['out_dir']
-
-    """
-    LOAD THE MODEL WEIGHTS HERE
-    """
-
-    model = YOLO(f"{MODEL}")
-
     for sid in C:
         for deploy in sorted(C[sid]):
             n = len(C[sid][deploy])
-            print(f"\nThis is Jun: {n}")
-            print(f"\nThis is Jun: {C[sid][deploy]}")
             print('processing %s paths for sid=%s, deploy=%s'%(n,sid,deploy))
-            # [1] find a starting reference image point::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            #[1] find a starting reference image point::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             ref = skip_to_ref([e[-1] for e in C[sid][deploy]],width=width,height=height) #[datetime,label,camera,path]
-            # [2] read images and detect image events::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+            #[2] read images and detect image events::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             raw_imgs = {}
             for i in range(n):
                 raw_imgs[i] = read_crop_resize(C[sid][deploy][i][-1],height=height,width=width)
-            # [3] find events and partition the images on quality::::::::::::::::::::::::::::::::::::::::
+            #[3] find events and partition the images on quality::::::::::::::::::::::::::::::::::::::::
             events = detect_events(raw_imgs,ref)
             ls = {i:C[sid][deploy][i][1] for i in range(len(C[sid][deploy]))} #get original labels if they exist
             sharp_imgs = {}

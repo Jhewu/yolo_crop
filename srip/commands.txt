@@ -1,7 +1,7 @@
 python3 stream_river_image_processor.py \
---in_dir ./updated_2018 \
---out_dir ./out_dir \
---res 300,100 \
+--in_dir ./out_dir/passed \
+--out_dir ./final_data \
+--res 600,200 \
 --enh_hrs 0 \
 --agg_hrs 0 \
 --winsize 0 \
@@ -14,4 +14,9 @@ python3 stream_river_image_processor.py \
 
 python3 mini_srip.py \
 --in_dir ./updated_2018 \
---out_dir ./out_dir 
+--out_dir ./out_dir \
+--width 600 \
+--height 200 \
+--model_dir model/best.pt \
+--window_size 32 \
+--conf 0.7
