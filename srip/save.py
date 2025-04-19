@@ -11,11 +11,10 @@ import exifread
 import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
-
+import multiprocessing as mp
 import piexif
 from PIL import Image, ExifTags
 from ultralytics import YOLO
-from random import shuffle
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -66,13 +65,6 @@ def crop_seg(img,seg):
         else:                                    #left   orientation
             img1 = img[:,seg[2]:,:]
     return img1
-
-"""ADDED BY JUN"""
-def get_deployment(path): 
-    path = os.path.basename(path)
-    path = path.split(" ")[0].split("_")
-    path = [item for item in path if item != '']
-    return "_".join(path)
 
 """MODIFIED TO IMG INSTEAD OF PATH"""
 def read_crop_resize(img,width=600,height=200):
@@ -331,70 +323,77 @@ def detect_events(imgs,ref,min_size=300):
         if flr: events['flared'][i]  = True
     return events
 
-"""ADDED BY JUN TO PARALLELIZE"""
-def save_img_exif(i, filtered_image_paths, out_dir, all_image_paths, yolo_sharp_images): 
-    # Also preservers the input folder structure for regular SRIP
+def get_deployment(path): 
+    path = os.path.basename(path)
+    path = path.split(" ")[0].split("_")
+    path = [item for item in path if item != '']
+    return "_".join(path)
 
-    image_path = filtered_image_paths[i][0]
-    deployment = filtered_image_paths[i][-1]
-
-    # Create the output directory
-    dest_dir = os.path.join(out_dir, "passed")
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir, exist_ok=True)
-    dest_dir = os.path.join(dest_dir, deployment)
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir, exist_ok=True)
-
-    # Clean up the name from "__" excessive underscores
-    image_name_with_ext = os.path.basename(image_path)
-    name, ext = os.path.splitext(image_name_with_ext)
-    cleaned_name_parts = [item for item in name.split("_") if item != '']
-    img_name = f"{dest_dir}/{os.path.basename(f'{"_".join(cleaned_name_parts) + ext.split(' ')[-1]}')}"
-
-    # Extract EXIF data and save it alongside the image
-    with Image.open(all_image_paths[i][0]) as img:
-        exif_data = img.getexif()
-
-    processed_img_pil = Image.fromarray(yolo_sharp_images[i])
-    if exif_data:
-        cleaned_exif = clean_exif(exif_data)
-        exif_bytes = cleaned_exif.tobytes()
-        processed_img_pil.save(img_name, exif=exif_bytes, quality=100)
-    else:
-        processed_img_pil.save(img_name, quality=100)
-
-    print(f"Wrote image to {img_name}")
+def get_organized_deployment(deployment_path, filtered_image_paths): 
+    for i in filtered_image_paths: 
+        full_file_path = filtered_image_paths[i]
+        deployment = get_deployment(full_file_path)
+        if deployment in deployment_path:
+            deployment_path[deployment].append(full_file_path)
+        else:
+            deployment_path[deployment] = [full_file_path]
+    return deployment_path
 
 """MODIFIED BY JUN"""
-def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model/best.pt", window_size=32, conf=0.7):
+def worker_image_partitions(C, out_dir, model_dir=f"model/best.pt", buffer_size=32, conf=0.7):
+    width                = 600
+    height               = 200
+
     # Load the YOLO model
     model = YOLO(model_dir)
 
     for sid in C:
         for deploy in sorted(C[sid]):
-            # Extracting the deployment paths
             paths = extract_deployment_paths(C, sid, deploy)
-            shuffle(paths)
             cropped_images = []
+            
+            if len(paths) > buffer_size: 
+                print(f"\nn is bigger")
 
-            # Predict detection only on a window (selected number of images) with an confidence threshold
-            results = model.predict(paths[:window_size], conf=conf)
+                # Divide the list into batches
+                for i in range(0, len(paths), buffer_size): 
 
-            # Check if there's any objects with a prediction, and obtain such coordinates
-            coords = None
-            for result in results: 
-                boxes = result.boxes
-                if len(boxes) > 0: 
-                    coords = boxes.xywh[0]
-                    break
-        
-            # Process images based on whether a prediction was found
-            if coords is not None:
-                cropped_images = [cropImageWithCenter(cv2.imread(path), coords) for path in paths]
-            else:
-                cropped_images = [cv2.imread(path) for path in paths]
+                    # Extract the current batch of paths
+                    batch_paths = paths[i:i+buffer_size]
 
+                    # Predict detection with an confidence threshold
+                    results = model.predict(batch_paths, conf=conf)
+
+                    for index, result in enumerate(results): 
+                        boxes = result.boxes
+                        image = result.orig_img
+
+                        # Ensure there are predictions
+                        if len(boxes) > 0: 
+                            coords = boxes.xywh[0]
+                        else: 
+                            cropped_images.append(image)
+                            continue # Continue if there's no prediction
+                        cropped_images.append(cropImageWithCenter(image, coords))
+            else: 
+                # Predict detection with an confidence threshold
+                results = model.predict(paths, conf=conf)
+                for index, result in enumerate(results): 
+                    boxes = result.boxes
+                    image = result.orig_img
+
+                    # Ensure there are predictions
+                    if len(boxes) > 0: 
+                        coords = boxes.xywh[0]
+                    else: 
+                        cropped_images.append(image)
+                        continue # Continue if there's no prediction
+                        
+                    cropped_images.append(cropImageWithCenter(image, coords))
+
+            
+
+            print(f"\nThis is cropped_images {len(cropped_images)}")
             print('processing %s paths for sid=%s, deploy=%s'%(len(paths),sid,deploy))
 
             # [1] find a starting reference image point::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -403,8 +402,6 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             # [2] read images and detect image events::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
             downsized_raw_imgs = {} # --> image used to detect
             yolo_raw_imgs = {} # --> image to save
-            
-            # Storing the initial image paths [0], and the deployment information [1], but needs to be decluttered
             all_image_paths = {}
 
             """
@@ -413,13 +410,11 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             which contains the actual original images to be saved
             """
 
-            """PARALLELIZE"""
             for i in range(len(paths)):
-                all_image_paths[i] = [C[sid][deploy][i][-1], get_deployment(C[sid][deploy][i][-1])]
+                all_image_paths[i] = C[sid][deploy][i][-1]
                 yolo_raw_imgs[i] = cropped_images[i]
                 downsized_raw_imgs[i] = read_crop_resize(cropped_images[i],height=height,width=width)
 
-            """PARALLELIZE"""
             # [3] find events and partition the images on quality::::::::::::::::::::::::::::::::::::::::
             events = detect_events(downsized_raw_imgs, ref)
             ls = {i:C[sid][deploy][i][1] for i in range(len(C[sid][deploy]))} # get original labels if they exist
@@ -427,7 +422,6 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             yolo_sharp_images = {}
             filtered_image_paths = {}
 
-            """PARALLELIZE"""
             for i in downsized_raw_imgs:
                 if i in ls: label = ls[i]
                 else:       label = 0
@@ -442,39 +436,42 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
 
             # [4] saving the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-            """PARALLELIZE"""
             # Iterate over the keys in filtered_image_paths
-            for i in filtered_image_paths:
-                image_path = filtered_image_paths[i][0]
-                deployment = filtered_image_paths[i][-1]
+            deployment_paths = get_organized_deployment({}, filtered_image_paths)
+            print(deployment_paths)
 
-                # Create the output directory
-                dest_dir = os.path.join(out_dir, "passed")
-                if not os.path.exists(dest_dir): os.mkdir(dest_dir)
+            # Convert to list to iterate over it
+            deployment_list = list(deployment_paths.items())
+            for elements in deployment_list:                 
+                # Elements is shaped like this: ('deployment', list of images)
+                deployment = elements[0]
+                image_list = elements[1]
 
-                dest_dir = os.path.join(dest_dir, deployment)
-                if not os.path.exists(dest_dir): os.mkdir(dest_dir)
+                for image in image_list: 
+                    # Create output directory
+                    deployment_dir = os.path.join(out_dir, 'passed', "deployment")
+                    if not os.path.exists(deployment_dir): os.mkdir(deployment)
 
-                # Clean up the name from "__" excessive underscores
-                image_name_with_ext = os.path.basename(image_path)                
-                name, ext = os.path.splitext(image_name_with_ext)
-                cleaned_name_parts = [item for item in name.split("_") if item != '']
-                
-                img_name = f"{dest_dir}/{os.path.basename(f"{"_".join(cleaned_name_parts) + ext.split(" ")[-1]}")}"
+                    # Clean up the name from "__" excessive underscores
+                    image_name = os.path.basename(image)
+                    image_name = image_name.split(" ")[0].split("_")
+                    image_name = [item for item in image_name if item != '']
+                    img_name = f"{deployment_dir}/{"_".join(image_name)}"
 
-                # Extract EXIF data and save it alongside the image
-                with Image.open(all_image_paths[i][0]) as img:
-                    exif_data = img.getexif()
+                    # Extract EXIF data and save it alongside the image
+                    with Image.open(image) as img:
+                        exif_data = img.getexif()
 
-                processed_img_pil = Image.fromarray(yolo_sharp_images[i])
+                    processed_img_pil = Image.fromarray(yolo_sharp_images[i])
 
-                if exif_data:
-                    cleaned_exif = clean_exif(exif_data)
-                    exif_bytes = cleaned_exif.tobytes()
-                    processed_img_pil.save(img_name, exif=exif_bytes, quality=100)
-                else: 
-                    processed_img_pil.save(img_name, quality=100)
-                print(f"Wrote image to {img_name}")
+                    if exif_data:
+                        cleaned_exif = clean_exif(exif_data)
+                        exif_bytes = cleaned_exif.tobytes()
+                        processed_img_pil.save(img_name, exif=exif_bytes, quality=100)
+                    else: 
+                        processed_img_pil.save(img_name, quality=100)
+                    print(f"Wrote image to {img_name}")
+
     return True
 
 def process_image_partitions(T,out_dir,cpus=6):
@@ -483,11 +480,16 @@ def process_image_partitions(T,out_dir,cpus=6):
     # but for mini SRIP, it will just save the passed images
 
     global result_list
+    # p2 = mp.Pool(processes=cpus)
 
     for cpu in T:  # balanced sid/deployments in ||
         print('dispatching %s images to core=%s'%(T[cpu]['n'],cpu))
         worker_image_partitions(T[cpu]['imgs'], out_dir)
-
+    #     p2.apply_async(worker_image_partitions,
+    #                    args=(T[cpu]['imgs'],out_dir),
+    #                    callback=collect_results)
+    # p2.close()
+    # p2.join()
     return True
 
 # Read all images exif data to order and partition triggered events,returns: order,error,trigs

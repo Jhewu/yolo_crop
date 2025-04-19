@@ -59,3 +59,18 @@ if __name__  == "__main__":
         for image in image_list: 
             image_path = os.path.join(sid_dir, os.path.basename(image))
             copy2(image, image_path)
+
+def get_deployment(path): 
+    path = os.path.basename(path)
+    path = path.split(" ")[0].split("_")
+    path = [item for item in path if item != '']
+    return "_".join(path)
+
+def get_organized_deployment(deployment_path, filtered_image_paths): 
+    for full_file_path in filtered_image_paths: 
+        deployment = get_deployment(full_file_path)
+        if deployment in deployment_path:
+            deployment_path[deployment].append(full_file_path)
+        else:
+            deployment_path[deployment] = [full_file_path]
+    return deployment_path
