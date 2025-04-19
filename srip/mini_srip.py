@@ -449,6 +449,7 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             # Process images based on whether a prediction was found
             if coords is not None:
                 cropped_images = [cropImageWithCenter(cv2.imread(path), coords) for path in paths]
+                """IF YOU WANT TO INTEGRATE THE 4 IMAGES, INTEGRATE IT HERE"""
             else:
                 cropped_images = [cv2.imread(path) for path in paths]
 
@@ -472,6 +473,17 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
 
             """COULD POTENTIALLY PARALLELIZE"""
             for i in range(len(paths)):
+                """IF YOU WANT TO INTEGRATE THE 4 IMAGES, INTEGRATE IT HERE
+                all_image_paths
+                [0] original image
+                [1] deployment
+                [3] image_names
+
+                yolo_raw_imgs[i] cropped contains all of the four
+
+                As long as you iterate over all_image_paths and then use the [3] to save the image name, this will work
+                correctly
+                """
                 all_image_paths[i] = [C[sid][deploy][i][-1], get_deployment(C[sid][deploy][i][-1])]
                 yolo_raw_imgs[i] = cropped_images[i]
                 downsized_raw_imgs[i] = read_crop_resize(cropped_images[i],height=height,width=width)
@@ -501,6 +513,7 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
 
             # [4] saving the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+            """ADD CPU BACK!"""
             # Iterate over the keys in filtered_image_paths
             with ThreadPoolExecutor(max_workers=8) as executor:  # Adjust max_workers based on your CPU
                 futures = []
