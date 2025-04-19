@@ -442,39 +442,20 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
 
             # [4] saving the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-            """PARALLELIZE"""
             # Iterate over the keys in filtered_image_paths
-            for i in filtered_image_paths:
-                image_path = filtered_image_paths[i][0]
-                deployment = filtered_image_paths[i][-1]
+            with ThreadPoolExecutor(max_workers=8) as executor:  # Adjust max_workers based on your CPU
+                futures = []
+                for i in filtered_image_paths:
+                    future = executor.submit(save_img_exif, i, filtered_image_paths, out_dir, all_image_paths, yolo_sharp_images)
+                    futures.append(future)
 
-                # Create the output directory
-                dest_dir = os.path.join(out_dir, "passed")
-                if not os.path.exists(dest_dir): os.mkdir(dest_dir)
+                # Wait for all tasks to complete
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
 
-                dest_dir = os.path.join(dest_dir, deployment)
-                if not os.path.exists(dest_dir): os.mkdir(dest_dir)
-
-                # Clean up the name from "__" excessive underscores
-                image_name_with_ext = os.path.basename(image_path)                
-                name, ext = os.path.splitext(image_name_with_ext)
-                cleaned_name_parts = [item for item in name.split("_") if item != '']
-                
-                img_name = f"{dest_dir}/{os.path.basename(f"{"_".join(cleaned_name_parts) + ext.split(" ")[-1]}")}"
-
-                # Extract EXIF data and save it alongside the image
-                with Image.open(all_image_paths[i][0]) as img:
-                    exif_data = img.getexif()
-
-                processed_img_pil = Image.fromarray(yolo_sharp_images[i])
-
-                if exif_data:
-                    cleaned_exif = clean_exif(exif_data)
-                    exif_bytes = cleaned_exif.tobytes()
-                    processed_img_pil.save(img_name, exif=exif_bytes, quality=100)
-                else: 
-                    processed_img_pil.save(img_name, quality=100)
-                print(f"Wrote image to {img_name}")
     return True
 
 def process_image_partitions(T,out_dir,cpus=6):
