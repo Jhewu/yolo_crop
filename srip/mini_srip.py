@@ -305,31 +305,88 @@ def luma_rotated(ref,img,sd=3.0,d_min=2.0,d_max=10.0,steps=25,pad=0.2,verbose=Fa
     if (theta<0.0 or theta>0.0): rot = True
     return rot
 
-def detect_events(imgs,ref,min_size=300):
-    x,events = 1,{'dark':{},'light':{},'bw':{},'rotated':{},'blurred':{},'flared':{}}
-    if len(imgs)>0:
-        if imgs[0].shape[0]>min_size:
-            while imgs[0].shape[0]//x>min_size: x+=1
-    for i in imgs:
-        if x>1:
-            imgA = resize(imgs[i],imgs[i].shape[1]//x,imgs[i].shape[0]//x)
-            refA = resize(ref,ref.shape[1]//x,ref.shape[0]//x)
+"""ADDED BY JUN"""
+def detect_events_processing(i, imgs, ref, min_size=300):
+    bw = drk = lht = blr = flr = rot = False
+    
+    if len(imgs) > 0:
+        x = 1
+        if imgs[0].shape[0] > min_size:
+            while imgs[0].shape[0] // x > min_size:
+                x += 1
+        
+        if x > 1:
+            imgA = resize(imgs[i], imgs[i].shape[1] // x, imgs[i].shape[0] // x)
+            refA = resize(ref, ref.shape[1] // x, ref.shape[0] // x)
         else:
             imgA = imgs[i]
             refA = ref
-        bw  = chroma_dropped(imgA)
+        
+        bw = chroma_dropped(imgA)
         drk = too_dark(imgA)
         lht = too_light(imgA)
         blr = blurred(imgA)
         flr = lens_flare(imgA)
-        rot = luma_rotated(refA,imgA)
-        if bw:  events['bw'][i]      = True
-        if drk: events['dark'][i]    = True
-        if lht: events['light'][i]   = True
-        if rot: events['rotated'][i] = True
-        if blr: events['blurred'][i] = True
-        if flr: events['flared'][i]  = True
+        rot = luma_rotated(refA, imgA)
+    
+    return i, {'dark': drk, 'light': lht, 'bw': bw, 'rotated': rot, 'blurred': blr, 'flared': flr}
+
+"""MODIFIED BY JUN """
+def detect_events(imgs, ref, min_size=300):
+    events = {'dark': {}, 'light': {}, 'bw': {}, 'rotated': {}, 'blurred': {}, 'flared': {}}
+    
+    if len(imgs) > 0:
+        x = 1
+        if imgs[0].shape[0] > min_size:
+            while imgs[0].shape[0] // x > min_size:
+                x += 1
+    
+    with ThreadPoolExecutor() as executor:
+        futures = {executor.submit(detect_events_processing, i, imgs, ref, min_size): i for i in range(len(imgs))}
+        
+        for future in as_completed(futures):
+            i, event_dict = future.result()
+            if event_dict['bw']:
+                events['bw'][i] = True
+            if event_dict['dark']:
+                events['dark'][i] = True
+            if event_dict['light']:
+                events['light'][i] = True
+            if event_dict['rotated']:
+                events['rotated'][i] = True
+            if event_dict['blurred']:
+                events['blurred'][i] = True
+            if event_dict['flared']:
+                events['flared'][i] = True
+    
     return events
+
+"""MODIFIED BY JUN"""
+# def detect_events(imgs,ref,min_size=300):
+#     x,events = 1,{'dark':{},'light':{},'bw':{},'rotated':{},'blurred':{},'flared':{}}
+#     if len(imgs)>0:
+#         if imgs[0].shape[0]>min_size:
+#             while imgs[0].shape[0]//x>min_size: x+=1
+#     for i in imgs:
+#         if x>1:
+#             imgA = resize(imgs[i],imgs[i].shape[1]//x,imgs[i].shape[0]//x)
+#             refA = resize(ref,ref.shape[1]//x,ref.shape[0]//x)
+#         else:
+#             imgA = imgs[i]
+#             refA = ref
+#         bw  = chroma_dropped(imgA)
+#         drk = too_dark(imgA)
+#         lht = too_light(imgA)
+#         blr = blurred(imgA)
+#         flr = lens_flare(imgA)
+#         rot = luma_rotated(refA,imgA)
+#         if bw:  events['bw'][i]      = True
+#         if drk: events['dark'][i]    = True
+#         if lht: events['light'][i]   = True
+#         if rot: events['rotated'][i] = True
+#         if blr: events['blurred'][i] = True
+#         if flr: events['flared'][i]  = True
+#     return events
 
 """ADDED BY JUN TO PARALLELIZE"""
 def save_img_exif(i, filtered_image_paths, out_dir, all_image_paths, yolo_sharp_images): 
@@ -413,13 +470,12 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             which contains the actual original images to be saved
             """
 
-            """PARALLELIZE"""
+            """COULD POTENTIALLY PARALLELIZE"""
             for i in range(len(paths)):
                 all_image_paths[i] = [C[sid][deploy][i][-1], get_deployment(C[sid][deploy][i][-1])]
                 yolo_raw_imgs[i] = cropped_images[i]
                 downsized_raw_imgs[i] = read_crop_resize(cropped_images[i],height=height,width=width)
 
-            """PARALLELIZE"""
             # [3] find events and partition the images on quality::::::::::::::::::::::::::::::::::::::::
             events = detect_events(downsized_raw_imgs, ref)
             ls = {i:C[sid][deploy][i][1] for i in range(len(C[sid][deploy]))} # get original labels if they exist
@@ -427,7 +483,7 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
             yolo_sharp_images = {}
             filtered_image_paths = {}
 
-            """PARALLELIZE"""
+            """COULD POTENTIALLY PARALLELIZE"""
             for i in downsized_raw_imgs:
                 if i in ls: label = ls[i]
                 else:       label = 0
@@ -439,6 +495,9 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
                                     # passed filters
                                     filtered_image_paths[i] = all_image_paths[i]
                                     yolo_sharp_images[i] = yolo_raw_imgs[i]
+
+            print(f"\nThis is before {len(all_image_paths)}")
+            print(f"This is after {len(filtered_image_paths)}\n")
 
             # [4] saving the "good" images to the passed folder::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -458,7 +517,7 @@ def worker_image_partitions(C, out_dir, width=600, height=200, model_dir=f"model
 
     return True
 
-def process_image_partitions(T,out_dir,cpus=6):
+def process_image_partitions(T,out_dir,width=600, height=200, model_dir=f"model/best.pt", window_size=32, conf=0.7):
     # Originally, the function used to detect events
     # and perform all of the traditional image enhancements
     # but for mini SRIP, it will just save the passed images
@@ -467,7 +526,7 @@ def process_image_partitions(T,out_dir,cpus=6):
 
     for cpu in T:  # balanced sid/deployments in ||
         print('dispatching %s images to core=%s'%(T[cpu]['n'],cpu))
-        worker_image_partitions(T[cpu]['imgs'], out_dir)
+        worker_image_partitions(T[cpu]['imgs'], out_dir, width, height, model_dir, window_size, conf)
 
     return True
 
@@ -586,7 +645,12 @@ if __name__ == "__main__":
     parser.add_argument('--in_dir',type=str,help='input directory of images\t[None]')
     parser.add_argument('--out_dir',type=str,help='output directory prefix\t[None]')
     parser.add_argument('--sids',type=str,help='specific comma seperated sids to process\t[all]')
-    parser.add_argument('--cpus',type=int,help='CPU cores to use for || processing\t[1]')
+    parser.add_argument('--width', type=int, default=600, help='image width\t[600]')
+    parser.add_argument('--height', type=int, default=200, help='image height\t[200]')
+    parser.add_argument('--model_dir', type=str, default="model/best.pt", help='path to the YOLO model directory\t[model/best.pt]')
+    parser.add_argument('--window_size', type=int, default=32, help='Only perform YOLO inference on these many images per deployment\t[32]')
+    parser.add_argument('--conf', type=float, default=0.7, help='YOLO confidence threshold for cropping\t[0.7]')
+
     args = parser.parse_args()
 
     # Set defaults or Raise errors
@@ -596,11 +660,32 @@ if __name__ == "__main__":
     if args.out_dir is not None:
         out_dir = args.out_dir
     else: raise IOError
+    if args.model_dir is not None: 
+        model_dir = args.model_dir
+    else: raise IOError
     if args.sids is not None:
         sids = [int(sid) for sid in args.sids.split(',')]
-    if args.cpus is not None:
-        cpus = args.cpus
-    else: cpus = 1
+    if args.width is not None: 
+        width = args.width
+    else: width = 600
+    if args.height is not None: 
+        height = args.height
+    else: height = 200
+    if args.window_size is not None: 
+        window_size = args.window_size
+    else: window_size = 32
+    if args.conf is not None: 
+        conf = args.conf
+    else: conf = 0.7
+
+    print(f"Input Directory: {in_dir}")
+    print(f"Output Directory: {out_dir}")
+    print(f"SIDs to Process: {sids}")
+    print(f"Image Width: {width}")
+    print(f"Image Height: {height}")
+    print(f"Model Directory: {model_dir}")
+    print(f"Window Size: {window_size}")
+    print(f"Confidence Threshold: {conf}")
 
     # Fetch and fix file names with the pattern and obtain the sorted raw_paths
     raw_path = in_dir+'/*/*.JPG'
@@ -679,7 +764,8 @@ if __name__ == "__main__":
     print('partitioned %s total images to %s processors'%(n_images,cpus))
 
     start = time.time()
-    process_image_partitions(T,out_dir, cpus=cpus)
+    process_image_partitions(T,out_dir, width, height, model_dir, window_size, conf)
+
     stop  = time.time()
     print('processed %s images in %s sec using %s cpus'%(n_images,round(stop-start,2),cpus))
     print('or %s images per sec'%(n_images/(stop-start)))
